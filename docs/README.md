@@ -41,5 +41,7 @@ Current active follow-up work:
 
 Recent follow-up references:
 
+- `docs/sprints/archive/2026-05-26-sprint-003-tui-ux-and-multi-author-books.md`
+- `docs/decisions/ADR-020-multi-author-book-field.md`
 - `docs/sprints/archive/2026-05-26-sprint-002-docker-first-tui.md`
 - `docs/decisions/ADR-019-docker-first-tui-adapter-and-mounted-imports.md`

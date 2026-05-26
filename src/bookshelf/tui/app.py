@@ -131,6 +131,10 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
     #note-field {
         height: 8;
     }
+
+    #authors-field {
+        height: 4;
+    }
     """
 
     BINDINGS = [Binding("escape", "cancel", "Cancel")]
@@ -164,6 +168,7 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
         )
         note_value = self._book.note if self._book and self._book.note else ""
         edition_value = self._book.edition if self._book and self._book.edition else ""
+        authors_value = "\n".join(self._book.authors) if self._book else ""
 
         with Vertical(id="book-form"):
             yield Static(title, id="form-title")
@@ -180,6 +185,12 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
                             value=reading_status_value,
                             id="reading-status-field",
                         )
+                yield Static("Authors (one per line)")
+                yield TextArea(
+                    text=authors_value,
+                    id="authors-field",
+                    language=None,
+                )
                 with Horizontal(classes="form-row"):
                     with Vertical(classes="form-column"):
                         yield Static("Category")
@@ -342,6 +353,7 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
         published_on = self._parse_optional_date(self.query_one("#published-on-field", Input).value)
         edition = self._normalize_optional_text(self.query_one("#edition-field", Input).value)
         note = self._normalize_optional_text(self.query_one("#note-field", TextArea).text)
+        authors = self._parse_multiline_values(self.query_one("#authors-field", TextArea).text)
         thumbnail_path = self._normalize_optional_text(
             self.query_one("#thumbnail-path-field", Input).value
         )
@@ -352,6 +364,7 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
         if self._book is None:
             return BookCreateInput(
                 name=name,
+                authors=authors,
                 category_slug=self._require_str(category, "category"),
                 sub_category_slug=sub_category if isinstance(sub_category, str) else None,
                 format=format_value if isinstance(format_value, BookFormat) else None,
@@ -370,6 +383,7 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
 
         return BookUpdateInput(
             name=name,
+            authors=authors,
             category_slug=self._require_str(category, "category"),
             sub_category_slug=(sub_category if isinstance(sub_category, str) else None),
             clear_sub_category=self._is_checked("#clear-sub-category"),
@@ -503,6 +517,9 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
             return None
         return date.fromisoformat(stripped)
 
+    def _parse_multiline_values(self, value: str) -> list[str]:
+        return [line.strip() for line in value.splitlines() if line.strip()]
+
     def _require_str(self, value: object, label: str) -> str:
         if isinstance(value, str) and value:
             return value
@@ -528,7 +545,7 @@ class BookshelfTuiApp(App[None]):
 
     #filters {
         height: auto;
-        max-height: 8;
+        min-height: 10;
         padding: 1;
     }
 
@@ -575,6 +592,7 @@ class BookshelfTuiApp(App[None]):
     }
 
     .filter-actions {
+        height: 3;
         align-horizontal: right;
         padding-top: 1;
     }
@@ -600,6 +618,7 @@ class BookshelfTuiApp(App[None]):
             total_pages=0,
         )
         self._selected_book_id: str | None = None
+        self._suppress_filter_refresh = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -711,6 +730,12 @@ class BookshelfTuiApp(App[None]):
         elif button_id == "delete-book":
             self.action_delete_book()
 
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if self._suppress_filter_refresh:
+            return
+        if event.select.id in {"status-filter", "category-filter", "format-filter"}:
+            self._refresh_books(page=1)
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "name-filter":
             self._refresh_books(page=1)
@@ -765,7 +790,10 @@ class BookshelfTuiApp(App[None]):
 
         self._selected_book_id = saved_book.id.hex
         self._load_categories()
-        self._refresh_books(reset_selection=False)
+        self._refresh_books(
+            page=1 if existing_book_id is None else None,
+            reset_selection=False,
+        )
         self._set_status(message)
 
     def _delete_book(self, book_id: UUID, confirmed: bool) -> None:
@@ -781,7 +809,7 @@ class BookshelfTuiApp(App[None]):
             return
 
         self._selected_book_id = None
-        self._refresh_books(page=1)
+        self._refresh_books(reset_selection=False)
         self._set_status(f"Deleted book: {book_id}")
 
     def _load_categories(self) -> None:
@@ -795,6 +823,7 @@ class BookshelfTuiApp(App[None]):
 
         category_filter = self.query_one("#category-filter", Select)
         current_category = category_filter.value
+        self._suppress_filter_refresh = True
         category_filter.set_options(self._build_category_options())
         if isinstance(current_category, str) and any(
             category.slug == current_category for category in self._categories
@@ -802,12 +831,16 @@ class BookshelfTuiApp(App[None]):
             category_filter.value = current_category
         else:
             category_filter.value = Select.BLANK
+        self._suppress_filter_refresh = False
 
     def _refresh_books(self, *, page: int | None = None, reset_selection: bool = True) -> None:
         query_input = self._build_query_input(page=page)
         try:
             with self._session_factory() as session:
                 result = self._book_service_factory(session).query_books(query_input)
+                if result.total_pages and result.page > result.total_pages:
+                    query_input = self._build_query_input(page=result.total_pages)
+                    result = self._book_service_factory(session).query_books(query_input)
         except (SQLAlchemyError, ValueError) as exc:
             self._query_result = BookQueryResult(
                 items=[],
@@ -901,10 +934,12 @@ class BookshelfTuiApp(App[None]):
         delete_button.disabled = not has_selection
 
     def _reset_filters(self) -> None:
+        self._suppress_filter_refresh = True
         self.query_one("#status-filter", Select).value = Select.BLANK
         self.query_one("#category-filter", Select).value = Select.BLANK
         self.query_one("#format-filter", Select).value = Select.BLANK
         self.query_one("#name-filter", Input).value = ""
+        self._suppress_filter_refresh = False
 
     def _set_status(self, message: str) -> None:
         self.query_one("#status-line", Static).update(message)
@@ -945,6 +980,7 @@ class BookshelfTuiApp(App[None]):
     def _format_book_detail(self, book: BookSchema) -> str:
         details = [
             f"ID: {book.id}",
+            f"Authors: {', '.join(book.authors) if book.authors else '-'}",
             f"Category: {self._format_category_label(book)}",
             f"Status: {book.reading_status.value}",
             f"Format: {book.format.value if book.format else '-'}",

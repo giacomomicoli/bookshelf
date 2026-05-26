@@ -23,6 +23,10 @@ def test_cli_seed_and_add_book(session_factory, monkeypatch) -> None:
             "add",
             "--name",
             "My CLI Book",
+            "--author",
+            "First Author",
+            "--author",
+            "Second Author",
             "--category",
             "essays",
             "--sub-category",
@@ -41,6 +45,8 @@ def test_cli_seed_and_add_book(session_factory, monkeypatch) -> None:
         [
             "update",
             book_id,
+            "--author",
+            "Updated Author",
             "--reading-status",
             "read",
             "--clear-note",
@@ -58,6 +64,7 @@ def test_cli_seed_and_add_book(session_factory, monkeypatch) -> None:
     assert "Created book" in add_result.stdout
     assert unread_result.exit_code == 0
     assert "My CLI Book" in unread_result.stdout
+    assert "First Author, Second Author" in unread_result.stdout
     assert query_result.exit_code == 0
     assert "Page 1/1" in query_result.stdout
     assert update_result.exit_code == 0

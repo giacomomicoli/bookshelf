@@ -79,6 +79,7 @@ class Book(Base, TimestampMixin):
         Uuid(as_uuid=True), ForeignKey("sub_categories.id", ondelete="SET NULL"), nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    authors: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     purchase_urls: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     thumbnail_object_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     thumbnail_source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)

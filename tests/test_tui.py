@@ -35,6 +35,7 @@ def test_tui_app_lists_books_and_details(session_factory) -> None:
         BookService(session).create_book(
             BookCreateInput(
                 name="The Left Hand of Darkness",
+                authors=["Ursula K. Le Guin"],
                 category_slug="science-fiction",
                 sub_category_slug="space-opera",
                 reading_status=ReadingStatus.READING,
@@ -54,6 +55,7 @@ def test_tui_app_lists_books_and_details(session_factory) -> None:
 
         assert book_list.option_count == 1
         assert "The Left Hand of Darkness" in str(detail_title.content)
+        assert "Authors: Ursula K. Le Guin" in str(detail_body.content)
         assert "Science Fiction / Space Opera" in str(detail_body.content)
         assert "A cold and precise world-building study." in str(detail_body.content)
         assert "showing 1 of 1 books" in str(status_line.content)
@@ -61,7 +63,7 @@ def test_tui_app_lists_books_and_details(session_factory) -> None:
     asyncio.run(run_test())
 
 
-def test_tui_app_applies_filters(session_factory) -> None:
+def test_tui_app_refreshes_when_filter_changes(session_factory) -> None:
     with session_factory() as session:
         TaxonomyService(session).seed_from_file(TAXONOMY_PATH)
         service = BookService(session)
@@ -88,12 +90,7 @@ def test_tui_app_applies_filters(session_factory) -> None:
             await pilot.pause()
 
             status_filter = app.query_one("#status-filter", Select)
-            name_filter = app.query_one("#name-filter", Input)
-            apply_button = app.query_one("#apply-filters", Button)
-
             status_filter.value = ReadingStatus.READ
-            name_filter.value = "Book B"
-            apply_button.press()
             await pilot.pause()
 
             book_list = app.query_one("#book-list", OptionList)
@@ -164,12 +161,18 @@ def test_tui_layout_keeps_content_visible_at_normal_terminal_size(session_factor
             content = app.query_one("#content")
             book_list = app.query_one("#book-list", OptionList)
             detail_title = app.query_one("#detail-title", Static)
+            action_bar = app.query_one(".filter-actions")
+            add_button = app.query_one("#create-book", Button)
             content_height = content.size.height
             book_list_height = book_list.region.height
+            action_bar_height = action_bar.region.height
+            add_button_width = add_button.region.width
             detail_text = str(detail_title.content)
 
         assert content_height >= 10
         assert book_list_height >= 10
+        assert action_bar_height >= 3
+        assert add_button_width >= len("Add")
         assert "Visible Book" in detail_text
 
     asyncio.run(run_test())
@@ -239,6 +242,9 @@ def test_tui_app_creates_book(session_factory) -> None:
             form = app.screen
 
             form.query_one("#name-field", Input).value = "The Dispossessed"
+            form.query_one("#authors-field", TextArea).load_text(
+                "Ursula K. Le Guin\nAnother Contributor"
+            )
             form.query_one("#category-field", Select).value = "science-fiction"
             await pilot.pause()
             form.query_one("#sub-category-field", Select).value = "space-opera"
@@ -255,6 +261,7 @@ def test_tui_app_creates_book(session_factory) -> None:
 
         assert book_list.option_count == 1
         assert "The Dispossessed" in str(detail_title.content)
+        assert "Authors: Ursula K. Le Guin, Another Contributor" in str(detail_body.content)
         assert "An austere political classic." in str(detail_body.content)
         assert "Created book: The Dispossessed" in str(status_line.content)
 
@@ -467,6 +474,7 @@ def test_tui_app_updates_book(session_factory) -> None:
         BookService(session).create_book(
             BookCreateInput(
                 name="Original Title",
+                authors=["Original Author"],
                 category_slug="essays",
                 reading_status=ReadingStatus.UNREAD,
                 note="Old note.",
@@ -485,6 +493,7 @@ def test_tui_app_updates_book(session_factory) -> None:
             form = app.screen
 
             form.query_one("#name-field", Input).value = "Updated Title"
+            form.query_one("#authors-field", TextArea).load_text("Updated Author\nCoauthor")
             form.query_one("#reading-status-field", Select).value = ReadingStatus.READING
             form.query_one("#note-field", TextArea).load_text("Updated note.")
 
@@ -496,9 +505,53 @@ def test_tui_app_updates_book(session_factory) -> None:
             status_line = app.query_one("#status-line", Static)
 
         assert "Updated Title" in str(detail_title.content)
+        assert "Authors: Updated Author, Coauthor" in str(detail_body.content)
         assert "Status: reading" in str(detail_body.content)
         assert "Updated note." in str(detail_body.content)
         assert "Updated book: Updated Title" in str(status_line.content)
+
+
+def test_tui_delete_refreshes_current_page_selection(session_factory) -> None:
+    with session_factory() as session:
+        TaxonomyService(session).seed_from_file(TAXONOMY_PATH)
+        service = BookService(session)
+        for index in range(21):
+            service.create_book(
+                BookCreateInput(
+                    name=f"Paged Book {index:02d}",
+                    category_slug="essays",
+                    reading_status=ReadingStatus.UNREAD,
+                )
+            )
+
+    async def run_test() -> None:
+        app = BookshelfTuiApp(session_factory=session_factory)
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+
+            app.query_one("#next-page", Button).press()
+            await pilot.pause()
+
+            status_line = app.query_one("#status-line", Static)
+            assert "Page 2/2" in str(status_line.content)
+
+            app.query_one("#delete-book", Button).press()
+            await pilot.pause()
+
+            confirm = app.screen
+            confirm.query_one("#confirm-delete-button", Button).press()
+            await pilot.pause()
+
+            previous_button = app.query_one("#previous-page", Button)
+            next_button = app.query_one("#next-page", Button)
+            book_list = app.query_one("#book-list", OptionList)
+            status_line = app.query_one("#status-line", Static)
+
+        assert previous_button.disabled is True
+        assert next_button.disabled is True
+        assert book_list.option_count == 20
+        assert "Deleted book:" in str(status_line.content)
 
     asyncio.run(run_test())
 

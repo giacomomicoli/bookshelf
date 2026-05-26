@@ -31,9 +31,9 @@ Bookshelf uses a modular monolith structure with shared application services tha
 ## Current Application Scope
 
 - taxonomy seed loading from YAML
-- interactive CLI book creation
+- interactive CLI book creation and editing with multi-author metadata
 - book query, update, and deletion workflows
-- full-screen TUI for paginated browsing, CRUD flows, note editing, and thumbnail imports
+- full-screen TUI for paginated browsing, reactive filter updates, CRUD flows, note editing, and thumbnail imports
 - thumbnail replacement and cleanup lifecycle
 - paginated REST API with dedicated HTTP schemas
 

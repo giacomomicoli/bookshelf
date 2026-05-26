@@ -50,9 +50,11 @@
 ## TUI Status
 
 - `bookshelf tui` now launches a Textual library view over shared services.
-- The current implementation shows a paginated book list, selected-book details, filters for `status`, `category`, `format`, and `name_contains`, and create/update/delete flows.
+- The current implementation shows a paginated book list, selected-book details, multi-author metadata, filters for `status`, `category`, `format`, and `name_contains`, and create/update/delete flows.
+- Changing the supported select filters reloads the first page immediately.
+- Creating, updating, and deleting books refreshes the visible list immediately without requiring manual refresh.
 - Notes can be edited inline or handed off through `$EDITOR` when the runtime supports app suspension.
-- Manual refresh returns to page 1 so newly created books are visible in the first result page.
+- Manual refresh still returns to page 1 when you want to force a reload.
 - Thumbnail imports work from remote URLs or local file paths, including Dockerized paths under `/app/imports`.
 - The layout is tuned for normal full-screen terminal sizes so the list and detail panes stay visible alongside the filter bar.
 
@@ -60,7 +62,7 @@
 
 - `make tui` uses local source directly and does not use Docker, so rebuilding an image cannot affect that path.
 - `make docker-tui` rebuilds the shared image before launch.
-- If a known book is missing in the TUI, clear filters and press `r`.
+- If a known book is missing in the TUI, clear filters first; `r` is available for a manual reload but is no longer required for normal in-app CRUD and filter changes.
 - If the layout looks wrong or content appears missing, resize to a normal full-screen terminal and relaunch.
 
 ## Useful Commands

@@ -4,6 +4,7 @@
 
 - `id`: UUID
 - `name`: required string
+- `authors`: ordered list of author names
 - `category`: required category reference
 - `sub_category`: optional sub-category reference
 - `purchase_urls`: JSON array of strings
@@ -21,6 +22,7 @@
 ## Rules
 
 - `sub_category` is optional in all cases.
+- `authors` may be empty, but when present each author name is stored as free text in the order entered.
 - If `sub_category` is provided, it must belong to the selected category.
 - Purchase URLs are stored on the book record as JSON.
 - Thumbnails are imported into object storage rather than stored as raw database blobs.

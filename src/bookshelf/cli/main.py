@@ -61,6 +61,10 @@ NoteFileOption = Annotated[
     Path | None,
     typer.Option(help="Optional text file to load into the note field."),
 ]
+AuthorsOption = Annotated[
+    list[str] | None,
+    typer.Option("--author", help="Repeat to set authors in display order."),
+]
 BookIdArgument = Annotated[UUID, typer.Argument(help="Book identifier.")]
 QueryCategoryOption = Annotated[str | None, typer.Option(help="Filter by category slug.")]
 QuerySubCategoryOption = Annotated[
@@ -88,6 +92,7 @@ PurchaseUrlsOption = Annotated[
     typer.Option("--purchase-url", help="Repeat to replace purchase URLs."),
 ]
 ClearSubCategoryOption = Annotated[bool, typer.Option(help="Clear the sub-category.")]
+ClearAuthorsOption = Annotated[bool, typer.Option(help="Clear all authors.")]
 ClearPurchaseUrlsOption = Annotated[bool, typer.Option(help="Clear all purchase URLs.")]
 ClearThumbnailOption = Annotated[bool, typer.Option(help="Remove the current thumbnail.")]
 ClearPublishedOnOption = Annotated[bool, typer.Option(help="Clear the publishing date.")]
@@ -122,8 +127,8 @@ def categories() -> None:
             typer.echo(f"  - {sub_category.slug}: {sub_category.name}")
 
 
-@app.command()
-def list(status: StatusFilterOption = None) -> None:
+@app.command("list")
+def list_books(status: StatusFilterOption = None) -> None:
     _run_query_command(BookQueryInput(status=status))
 
 
@@ -173,6 +178,7 @@ def query(
 @app.command()
 def add(
     name: NameOption = None,
+    authors: AuthorsOption = None,
     category: CategoryOption = None,
     sub_category: SubCategoryOption = None,
     published_on: PublishedOnOption = None,
@@ -194,6 +200,7 @@ def add(
         create_input = _prompt_for_book(
             categories_payload=categories_payload,
             name=name,
+            authors=authors,
             category=category,
             sub_category=sub_category,
             published_on=published_on,
@@ -222,6 +229,7 @@ def add(
 def update(
     book_id: BookIdArgument,
     name: NameOption = None,
+    authors: AuthorsOption = None,
     category: CategoryOption = None,
     sub_category: SubCategoryOption = None,
     published_on: PublishedOnOption = None,
@@ -233,6 +241,7 @@ def update(
     thumbnail_url: ThumbnailUrlOption = None,
     note_file: NoteFileOption = None,
     purchase_urls: PurchaseUrlsOption = None,
+    clear_authors: ClearAuthorsOption = False,
     clear_sub_category: ClearSubCategoryOption = False,
     clear_purchase_urls: ClearPurchaseUrlsOption = False,
     clear_thumbnail: ClearThumbnailOption = False,
@@ -254,6 +263,7 @@ def update(
 
         if _has_update_flags(
             name=name,
+            authors=authors,
             category=category,
             sub_category=sub_category,
             published_on=published_on,
@@ -265,6 +275,7 @@ def update(
             thumbnail_url=thumbnail_url,
             note_file=note_file,
             purchase_urls=purchase_urls,
+            clear_authors=clear_authors,
             clear_sub_category=clear_sub_category,
             clear_purchase_urls=clear_purchase_urls,
             clear_thumbnail=clear_thumbnail,
@@ -277,6 +288,8 @@ def update(
             try:
                 update_input = BookUpdateInput(
                     name=name,
+                    authors=authors,
+                    clear_authors=clear_authors,
                     category_slug=category,
                     sub_category_slug=sub_category,
                     clear_sub_category=clear_sub_category,
@@ -346,6 +359,7 @@ def _prompt_for_book(
     *,
     categories_payload: list,
     name: str | None,
+    authors: list[str] | None,
     category: str | None,
     sub_category: str | None,
     published_on: str | None,
@@ -360,6 +374,7 @@ def _prompt_for_book(
     category_map = {item.slug: item for item in categories_payload}
 
     book_name = name or typer.prompt("Book name")
+    author_values = authors if authors is not None else _collect_authors()
 
     if category is None:
         typer.echo("Available categories:")
@@ -436,6 +451,7 @@ def _prompt_for_book(
 
     return BookCreateInput(
         name=book_name,
+        authors=author_values,
         category_slug=category,
         sub_category_slug=sub_category_value,
         purchase_urls=purchase_urls,
@@ -461,6 +477,9 @@ def _prompt_for_book_update(
         label="Book name",
         current_value=current_book.name,
     )
+
+    replace_authors = typer.confirm("Replace authors?", default=False)
+    authors_value = _collect_authors() if replace_authors else None
 
     typer.echo("Available categories:")
     for item in categories_payload:
@@ -548,6 +567,7 @@ def _prompt_for_book_update(
 
     return BookUpdateInput(
         name=book_name if book_name != current_book.name else None,
+        authors=authors_value,
         category_slug=category_value if category_value != current_book.category.slug else None,
         sub_category_slug=sub_category_value,
         clear_sub_category=clear_sub_category,
@@ -575,6 +595,16 @@ def _collect_purchase_urls() -> list[str]:
     values: list[str] = []
     while True:
         value = typer.prompt("Purchase URL", default="", show_default=False).strip()
+        if not value:
+            return values
+        values.append(value)
+
+
+def _collect_authors() -> list[str]:
+    typer.echo("Add authors in display order. Leave blank when finished.")
+    values: list[str] = []
+    while True:
+        value = typer.prompt("Author", default="", show_default=False).strip()
         if not value:
             return values
         values.append(value)
@@ -610,7 +640,8 @@ def _format_book_summary(book: BookSchema) -> str:
     category_label = book.category.name
     if book.sub_category is not None:
         category_label = f"{category_label} / {book.sub_category.name}"
-    return f"{book.id} | {book.name} | {category_label} | {book.reading_status}"
+    authors_label = ", ".join(book.authors) or "-"
+    return f"{book.id} | {book.name} | {authors_label} | {category_label} | {book.reading_status}"
 
 
 def _parse_date(value: str) -> date | None:
@@ -739,6 +770,7 @@ def _read_note_file(note_file: Path | None) -> str | None:
 def _has_update_flags(
     *,
     name: str | None,
+    authors: list[str] | None,
     category: str | None,
     sub_category: str | None,
     published_on: str | None,
@@ -750,6 +782,7 @@ def _has_update_flags(
     thumbnail_url: str | None,
     note_file: Path | None,
     purchase_urls: list[str] | None,
+    clear_authors: bool,
     clear_sub_category: bool,
     clear_purchase_urls: bool,
     clear_thumbnail: bool,
@@ -763,6 +796,7 @@ def _has_update_flags(
         value is not None
         for value in [
             name,
+            authors,
             category,
             sub_category,
             published_on,
@@ -777,6 +811,7 @@ def _has_update_flags(
         ]
     ) or any(
         [
+            clear_authors,
             clear_sub_category,
             clear_purchase_urls,
             clear_thumbnail,

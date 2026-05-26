@@ -935,11 +935,13 @@ class BookshelfTuiApp(App[None]):
 
     def _reset_filters(self) -> None:
         self._suppress_filter_refresh = True
-        self.query_one("#status-filter", Select).value = Select.BLANK
-        self.query_one("#category-filter", Select).value = Select.BLANK
-        self.query_one("#format-filter", Select).value = Select.BLANK
-        self.query_one("#name-filter", Input).value = ""
-        self._suppress_filter_refresh = False
+        try:
+            self.query_one("#status-filter", Select).value = Select.BLANK
+            self.query_one("#category-filter", Select).value = Select.BLANK
+            self.query_one("#format-filter", Select).value = Select.BLANK
+            self.query_one("#name-filter", Input).value = ""
+        finally:
+            self._suppress_filter_refresh = False
 
     def _set_status(self, message: str) -> None:
         self.query_one("#status-line", Static).update(message)

@@ -824,14 +824,16 @@ class BookshelfTuiApp(App[None]):
         category_filter = self.query_one("#category-filter", Select)
         current_category = category_filter.value
         self._suppress_filter_refresh = True
-        category_filter.set_options(self._build_category_options())
-        if isinstance(current_category, str) and any(
-            category.slug == current_category for category in self._categories
-        ):
-            category_filter.value = current_category
-        else:
-            category_filter.value = Select.BLANK
-        self._suppress_filter_refresh = False
+        try:
+            category_filter.set_options(self._build_category_options())
+            if isinstance(current_category, str) and any(
+                category.slug == current_category for category in self._categories
+            ):
+                category_filter.value = current_category
+            else:
+                category_filter.value = Select.BLANK
+        finally:
+            self._suppress_filter_refresh = False
 
     def _refresh_books(self, *, page: int | None = None, reset_selection: bool = True) -> None:
         query_input = self._build_query_input(page=page)

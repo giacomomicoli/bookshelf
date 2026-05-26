@@ -149,7 +149,9 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
     def compose(self) -> ComposeResult:
         title = "Add book" if self._book is None else f"Edit book: {self._book.name}"
         reading_status_value = self._book.reading_status if self._book else ReadingStatus.UNREAD
-        category_value = self._book.category.slug if self._book else self._categories[0].slug
+        category_value = self._book.category.slug if self._book else (
+            self._categories[0].slug if self._categories else Select.BLANK
+        )
         sub_category_value = (
             self._book.sub_category.slug if self._book and self._book.sub_category else Select.BLANK
         )
@@ -265,10 +267,22 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
                 )
                 with Horizontal(classes="form-actions"):
                     yield Button("Open in $EDITOR", id="edit-note-external")
-            yield Static("", id="form-error")
+            yield Static(
+                (
+                    ""
+                    if self._categories
+                    else "No categories available. Run bookshelf seed-taxonomy first."
+                ),
+                id="form-error",
+            )
             with Horizontal(classes="form-actions"):
                 yield Button("Cancel", id="cancel-form")
-                yield Button("Save", id="save-form", variant="primary")
+                yield Button(
+                    "Save",
+                    id="save-form",
+                    variant="primary",
+                    disabled=not self._categories,
+                )
 
     def action_cancel(self) -> None:
         self.dismiss(None)
@@ -304,6 +318,12 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
             self.dismiss(None)
 
     def _submit(self) -> None:
+        if not self._categories:
+            self.query_one("#form-error", Static).update(
+                "No categories available. Run bookshelf seed-taxonomy first."
+            )
+            return
+
         try:
             result = self._build_payload()
         except (ValidationError, ValueError) as exc:
@@ -433,6 +453,8 @@ class BookFormScreen(ModalScreen[BookCreateInput | BookUpdateInput | None]):
         return [(status.value.replace("_", " ").title(), status) for status in ReadingStatus]
 
     def _build_category_options(self) -> list[tuple[str, object]]:
+        if not self._categories:
+            return [("No categories available", Select.BLANK)]
         return [(category.name, category.slug) for category in self._categories]
 
     def _build_sub_category_options(
@@ -707,6 +729,10 @@ class BookshelfTuiApp(App[None]):
         self._render_selected_book()
 
     def _open_book_form(self, *, book: BookSchema | None) -> None:
+        if not self._categories:
+            self._set_status("No categories available. Run bookshelf seed-taxonomy first.")
+            return
+
         self.push_screen(
             BookFormScreen(categories=self._categories, book=book),
             callback=lambda payload: self._save_book(

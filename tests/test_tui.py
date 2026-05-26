@@ -261,6 +261,64 @@ def test_tui_app_creates_book(session_factory) -> None:
     asyncio.run(run_test())
 
 
+def test_tui_create_book_requires_seeded_taxonomy(session_factory) -> None:
+    async def run_test() -> None:
+        app = BookshelfTuiApp(session_factory=session_factory)
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+
+            app.query_one("#create-book", Button).press()
+            await pilot.pause()
+
+            status_line = app.query_one("#status-line", Static)
+
+        assert "No categories available. Run bookshelf seed-taxonomy first." in str(
+            status_line.content
+        )
+
+    asyncio.run(run_test())
+
+
+def test_tui_edit_book_requires_seeded_taxonomy(session_factory) -> None:
+    with session_factory() as session:
+        TaxonomyService(session).seed_from_file(TAXONOMY_PATH)
+        BookService(session).create_book(
+            BookCreateInput(
+                name="Needs Taxonomy",
+                category_slug="essays",
+                reading_status=ReadingStatus.UNREAD,
+            )
+        )
+
+    class EmptyTaxonomyService:
+        def __init__(self, session) -> None:
+            self._session = session
+
+        def list_categories(self) -> list:
+            return []
+
+    async def run_test() -> None:
+        app = BookshelfTuiApp(
+            session_factory=session_factory,
+            taxonomy_service_factory=lambda session: EmptyTaxonomyService(session),
+        )
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+
+            app.query_one("#edit-book", Button).press()
+            await pilot.pause()
+
+            status_line = app.query_one("#status-line", Static)
+
+        assert "No categories available. Run bookshelf seed-taxonomy first." in str(
+            status_line.content
+        )
+
+    asyncio.run(run_test())
+
+
 def test_tui_note_external_editor_requires_editor_env(session_factory, monkeypatch) -> None:
     with session_factory() as session:
         TaxonomyService(session).seed_from_file(TAXONOMY_PATH)

@@ -14,7 +14,7 @@ This file routes coding agents through the project documentation and working rul
 
 ## Core Rules
 
-- CLI and API are adapters only. Shared business logic belongs in services.
+- CLI, TUI, and API are adapters only. Shared business logic belongs in services.
 - Reuse existing services before adding new entrypoints.
 - Any open question or decision that impacts the core design must be documented as an ADR in `docs/decisions/` before implementation continues.
 - Keep taxonomy changes aligned with the versioned YAML seed file unless an ADR changes that rule.
@@ -30,6 +30,7 @@ This file routes coding agents through the project documentation and working rul
 
 - `src/bookshelf/api/`: FastAPI entrypoints
 - `src/bookshelf/cli/`: Typer CLI entrypoints
+- `src/bookshelf/tui/`: Textual TUI adapter
 - `src/bookshelf/services/`: application use-cases
 - `src/bookshelf/repositories/`: persistence logic
 - `src/bookshelf/db/`: SQLAlchemy models and session setup

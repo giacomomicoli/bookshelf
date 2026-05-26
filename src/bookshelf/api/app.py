@@ -101,8 +101,7 @@ def create_app() -> FastAPI:
     def list_categories(session: SessionDependency) -> list[ApiTaxonomyCategoryResponse]:
         service = build_taxonomy_service(session)
         return [
-            ApiTaxonomyCategoryResponse.from_service(item)
-            for item in service.list_categories()
+            ApiTaxonomyCategoryResponse.from_service(item) for item in service.list_categories()
         ]
 
     return app

@@ -52,8 +52,7 @@ class ApiTaxonomyCategoryResponse(ApiCategoryResponse):
             slug=payload.slug,
             name=payload.name,
             subcategories=[
-                ApiSubCategoryResponse.from_service(item)
-                for item in payload.subcategories
+                ApiSubCategoryResponse.from_service(item) for item in payload.subcategories
             ],
         )
 

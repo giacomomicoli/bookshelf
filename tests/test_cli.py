@@ -66,3 +66,18 @@ def test_cli_seed_and_add_book(session_factory, monkeypatch) -> None:
     assert "Deleted book" in delete_result.stdout
     assert missing_result.exit_code == 0
     assert "No books found." in missing_result.stdout
+
+
+def test_cli_tui_command_runs_app(monkeypatch) -> None:
+    runner = CliRunner()
+    called: dict[str, object] = {}
+
+    def fake_run_tui(*, session_factory) -> None:
+        called["session_factory"] = session_factory
+
+    monkeypatch.setattr(cli_main, "run_tui", fake_run_tui)
+
+    result = runner.invoke(cli_main.app, ["tui"])
+
+    assert result.exit_code == 0, result.stdout
+    assert called == {"session_factory": cli_main.SessionLocal}

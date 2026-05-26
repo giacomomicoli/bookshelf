@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision = "202605251600"
 down_revision = None
@@ -16,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 
-book_format = sa.Enum(
+book_format = postgresql.ENUM(
     "hardcover",
     "paperback",
     "mass_market_paperback",
@@ -24,9 +25,16 @@ book_format = sa.Enum(
     "audiobook",
     "other",
     name="book_format",
+    create_type=False,
 )
 
-reading_status = sa.Enum("unread", "reading", "read", name="reading_status")
+reading_status = postgresql.ENUM(
+    "unread",
+    "reading",
+    "read",
+    name="reading_status",
+    create_type=False,
+)
 
 
 def upgrade() -> None:

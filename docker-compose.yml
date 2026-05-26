@@ -1,10 +1,14 @@
+x-app-image: &app-image
+  build:
+    context: .
+  image: bookshelf-app:local
+
 services:
   api:
-    build:
-      context: .
+    <<: *app-image
     command: ["/app/docker-entrypoint-api.sh"]
     env_file:
-      - .env.example
+      - .env.docker
     ports:
       - "8000:8000"
     depends_on:
@@ -15,12 +19,13 @@ services:
       minio-init:
         condition: service_completed_successfully
   cli:
-    build:
-      context: .
+    <<: *app-image
     profiles: ["tools"]
     entrypoint: ["/app/docker-entrypoint-cli.sh"]
     env_file:
-      - .env.example
+      - .env.docker
+    volumes:
+      - ./imports:/app/imports
     depends_on:
       postgres:
         condition: service_healthy

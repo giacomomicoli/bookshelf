@@ -1,6 +1,6 @@
 # API Overview
 
-The API is still intentionally small, but it now supports the first full book management workflow needed by a future graphical client.
+The API is still intentionally small, but it now supports the shared book management workflow needed by external clients. The CLI and TUI remain separate adapters over the same service layer rather than internal API clients.
 
 ## Endpoints
 
@@ -37,7 +37,7 @@ Supported query parameters:
 
 ## Schema Rule
 
-FastAPI routes use API-specific request and response schemas. Internal service DTOs remain separate so CLI-only fields such as local thumbnail paths are not part of the public HTTP contract.
+FastAPI routes use API-specific request and response schemas. Internal service DTOs remain separate so adapter-only fields such as local thumbnail paths are not part of the public HTTP contract.
 
 ## Design Rule
 

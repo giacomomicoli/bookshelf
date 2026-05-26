@@ -1,10 +1,11 @@
 # Bookshelf
 
-Bookshelf is a CLI-first, API-ready utility for storing information about books in a way that mirrors a physical bookshelf. Categories act like shelf compartments, and books store structured metadata that can later be exposed through a graphical interface.
+Bookshelf is a CLI-first, TUI-enabled, API-ready utility for storing information about books in a way that mirrors a physical bookshelf. Categories act like shelf compartments, and books store structured metadata that can be managed from prompt-driven commands, a full-screen terminal UI, or the HTTP API.
 
 ## Features
 
 - store books with category and optional sub-category assignment
+- launch a full-screen terminal UI wired to shared services
 - track reading status as `unread`, `reading`, or `read`
 - attach purchase URLs as an array
 - import thumbnails from local files or remote URLs into MinIO
@@ -12,13 +13,21 @@ Bookshelf is a CLI-first, API-ready utility for storing information about books 
 - seed and inspect a controlled taxonomy from YAML
 - query books with filters, sorting, and pagination
 - update or delete books from both CLI and API
-- use the CLI today and build on the same service layer through the API later
+- reuse the same service layer across CLI, TUI, and API adapters
 
 ## Requirements
 
 - Python 3.12+
 - `uv`
 - Docker and Docker Compose for containerized infrastructure
+
+## Environment Files
+
+- `.env.example`: committed template for host-based commands. Copy it to `.env` for local workflows that connect to `localhost` services.
+- `.env`: ignored local environment file used by host-run commands such as `make migrate`, `make seed-taxonomy`, and `make tui`.
+- `.env.docker`: committed Docker Compose bootstrap config. It uses Compose service names such as `postgres` and `minio` and must remain non-secret.
+
+If you see local commands trying to connect to `postgres` instead of `localhost`, your local `.env` is using Docker container settings and should be refreshed from `.env.example`.
 
 ## Quick Start With uv
 
@@ -27,6 +36,8 @@ Bookshelf is a CLI-first, API-ready utility for storing information about books 
 ```bash
 cp .env.example .env
 ```
+
+This local `.env` targets `localhost` services for host-run commands.
 
 2. Install dependencies:
 
@@ -52,7 +63,16 @@ make migrate
 make seed-taxonomy
 ```
 
-6. Add your first book:
+6. Launch the TUI:
+
+```bash
+make tui
+uv run bookshelf tui
+```
+
+`make tui` and `uv run bookshelf tui` are host-run commands. They use your current workspace code and local `.env`. No Docker image is involved, so there is nothing to rebuild for this path.
+
+7. Or add your first book:
 
 ```bash
 uv run bookshelf add
@@ -60,23 +80,60 @@ uv run bookshelf add
 
 ## Quick Start With Docker
 
-1. Start the API and infrastructure:
+1. Build the shared app image:
+
+```bash
+make docker-build
+```
+
+This builds the local Docker image `bookshelf-app:local`.
+
+The same image is used by:
+
+- the `api` service
+- the `cli` service
+- `bookshelf tui` when run through Docker
+
+2. Start the API and infrastructure:
 
 ```bash
 make docker-up
 ```
 
-2. Seed taxonomy using the CLI container:
+Docker Compose uses `.env.docker` so containers resolve `postgres` and `minio` by service name.
+
+`.env.docker` is committed because it only contains public bootstrap defaults for local development. Do not store real secrets in it.
+
+`make docker-up` also rebuilds the API service before starting it.
+
+3. Seed taxonomy using the CLI container:
 
 ```bash
-docker compose run --rm --profile tools cli seed-taxonomy
+docker compose --profile tools run --rm cli seed-taxonomy
 ```
 
-3. Add a book using the CLI container:
+4. Launch the TUI from an interactive terminal:
 
 ```bash
-docker compose run --rm --profile tools cli add
+make docker-tui
+docker compose --profile tools run --rm --build cli tui
 ```
+
+`make docker-tui` now rebuilds the shared app image before starting the TUI, so Dockerized TUI runs do not keep using stale application code.
+
+For Dockerized thumbnail file imports, place files in the repo `imports/` directory and use `/app/imports/<filename>` from the CLI or TUI.
+
+5. Or add a book using the CLI container:
+
+```bash
+docker compose --profile tools run --rm cli add
+```
+
+When you need a rebuild:
+
+- for `make tui`: never, because it does not use Docker
+- for `make docker-tui`: yes when app code, dependencies, Dockerfile, or entrypoints changed; `make docker-tui` now does this automatically
+- for `make docker-up`: the image is rebuilt automatically because the command uses `--build`
 
 ## Common Commands
 
@@ -88,7 +145,10 @@ make lint
 make test
 make migrate
 make seed-taxonomy
+make tui
 make docker-up
+make docker-build
+make docker-tui
 make docker-down
 ```
 
@@ -110,6 +170,47 @@ Show the available categories and sub-categories.
 ```bash
 uv run bookshelf categories
 ```
+
+#### `bookshelf tui`
+
+Launch the full-screen TUI library view.
+
+```bash
+make tui
+uv run bookshelf tui
+make docker-tui
+docker compose --profile tools run --rm --build cli tui
+```
+
+Image behavior:
+
+- host-run `make tui` uses local source directly and does not use Docker
+- Dockerized TUI runs use the shared image `bookshelf-app:local`
+- the `api` and `cli` services reuse that same image
+- `make docker-build` builds that shared image explicitly
+
+Current behavior:
+
+- starts a Textual app with a header and footer
+- shows a book list with a selected-book detail pane
+- filters by `status`, `category`, `format`, and `name_contains`
+- supports previous and next page navigation over shared query results
+- supports create, update, and delete flows against shared services
+- supports inline note editing and `Open in $EDITOR` handoff when available
+- supports thumbnail imports by URL or local file path
+- press `r` to refresh and return to page 1
+- press `q` to quit
+
+Troubleshooting:
+
+- if `make tui` does not show books you know exist, make sure you are using a reasonably sized terminal window and relaunch the TUI; the current layout is intended for normal full-screen terminal sizes
+- if `make docker-tui` does not reflect recent code changes, rerun it; it now rebuilds automatically
+- if you still do not see a known book, clear filters and press `r`
+
+Thumbnail path rules:
+
+- host-run CLI and TUI commands can use any readable local file path
+- Dockerized CLI and TUI commands must use container-visible paths, so place files in `imports/` and use `/app/imports/<filename>`
 
 #### `bookshelf add`
 
@@ -234,7 +335,7 @@ uv run bookshelf delete 11111111-1111-1111-1111-111111111111 --yes
 
 ## API
 
-The API uses the same service layer as the CLI and now exposes paginated querying plus single-book management.
+The API uses the same service layer as the CLI and TUI and now exposes paginated querying plus single-book management.
 
 Current endpoints:
 

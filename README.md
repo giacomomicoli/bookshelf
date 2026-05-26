@@ -5,6 +5,7 @@ Bookshelf is a CLI-first, TUI-enabled, API-ready utility for storing information
 ## Features
 
 - store books with category and optional sub-category assignment
+- store books with ordered multi-author metadata
 - launch a full-screen terminal UI wired to shared services
 - track reading status as `unread`, `reading`, or `read`
 - attach purchase URLs as an array
@@ -194,18 +195,19 @@ Current behavior:
 - starts a Textual app with a header and footer
 - shows a book list with a selected-book detail pane
 - filters by `status`, `category`, `format`, and `name_contains`
+- refreshes immediately when supported TUI filters change
 - supports previous and next page navigation over shared query results
-- supports create, update, and delete flows against shared services
+- supports create, update, and delete flows against shared services with immediate in-app refresh
 - supports inline note editing and `Open in $EDITOR` handoff when available
 - supports thumbnail imports by URL or local file path
-- press `r` to refresh and return to page 1
+- press `r` to force a manual refresh and return to page 1
 - press `q` to quit
 
 Troubleshooting:
 
 - if `make tui` does not show books you know exist, make sure you are using a reasonably sized terminal window and relaunch the TUI; the current layout is intended for normal full-screen terminal sizes
 - if `make docker-tui` does not reflect recent code changes, rerun it; it now rebuilds automatically
-- if you still do not see a known book, clear filters and press `r`
+- if you still do not see a known book, clear filters first; `r` is still available for a manual reload
 
 Thumbnail path rules:
 
@@ -229,6 +231,7 @@ uv run bookshelf add --name "The Argonauts" --category essays --sub-category per
 Supported flags:
 
 - `--name`
+- `--author` repeated in display order
 - `--category`
 - `--sub-category`
 - `--published-on`
@@ -242,6 +245,7 @@ Supported flags:
 
 Notes:
 
+- authors are stored in the order entered
 - purchase URLs are collected interactively
 - notes open through your configured editor unless `--note-file` is used
 - only one thumbnail source can be provided at a time
@@ -299,6 +303,7 @@ uv run bookshelf update 11111111-1111-1111-1111-111111111111
 Supported update flags include:
 
 - `--name`
+- `--author` repeated to replace authors in display order
 - `--category`
 - `--sub-category`
 - `--purchase-url` repeated to replace URLs
@@ -310,6 +315,7 @@ Supported update flags include:
 - `--page-length`
 - `--reading-status`
 - `--note-file`
+- `--clear-authors`
 - `--clear-sub-category`
 - `--clear-purchase-urls`
 - `--clear-thumbnail`
@@ -377,6 +383,7 @@ make api
 Each book currently stores:
 
 - name
+- authors
 - category
 - optional sub-category
 - purchase URLs

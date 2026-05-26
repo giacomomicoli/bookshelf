@@ -39,6 +39,7 @@ class BookService:
 
         book = Book(
             name=payload.name,
+            authors=payload.authors,
             category_id=category.id,
             sub_category_id=sub_category.id if sub_category else None,
             purchase_urls=[str(url) for url in payload.purchase_urls],
@@ -91,6 +92,11 @@ class BookService:
 
         if payload.name is not None:
             book.name = payload.name
+
+        if payload.clear_authors:
+            book.authors = []
+        elif payload.authors is not None:
+            book.authors = payload.authors
 
         if payload.category_slug is not None:
             book.category_id = category.id
@@ -233,7 +239,9 @@ class BookService:
         try:
             if thumbnail_path is not None:
                 return storage.upload_from_path(thumbnail_path)
-            return storage.upload_from_url(thumbnail_url)
+            if thumbnail_url is not None:
+                return storage.upload_from_url(thumbnail_url)
+            return None, None
         except FileNotFoundError as exc:
             raise ValueError(str(exc)) from exc
         except httpx.HTTPError as exc:

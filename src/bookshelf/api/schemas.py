@@ -60,6 +60,7 @@ class ApiTaxonomyCategoryResponse(ApiCategoryResponse):
 class ApiBookResponse(BaseModel):
     id: UUID
     name: str
+    authors: list[str]
     category: ApiCategoryResponse
     sub_category: ApiSubCategoryResponse | None = None
     purchase_urls: list[str]
@@ -79,6 +80,7 @@ class ApiBookResponse(BaseModel):
         return cls(
             id=payload.id,
             name=payload.name,
+            authors=payload.authors,
             category=ApiCategoryResponse.from_service(payload.category),
             sub_category=(
                 ApiSubCategoryResponse.from_service(payload.sub_category)
@@ -119,6 +121,7 @@ class ApiPaginatedBooksResponse(BaseModel):
 
 class ApiBookCreateRequest(BaseModel):
     name: str
+    authors: list[str] = Field(default_factory=list)
     category_slug: str
     sub_category_slug: str | None = None
     purchase_urls: list[HttpUrl] = Field(default_factory=list)
@@ -133,6 +136,7 @@ class ApiBookCreateRequest(BaseModel):
     def to_service_input(self) -> BookCreateInput:
         return BookCreateInput(
             name=self.name,
+            authors=self.authors,
             category_slug=self.category_slug,
             sub_category_slug=self.sub_category_slug,
             purchase_urls=self.purchase_urls,
@@ -148,6 +152,8 @@ class ApiBookCreateRequest(BaseModel):
 
 class ApiBookUpdateRequest(BaseModel):
     name: str | None = None
+    authors: list[str] | None = None
+    clear_authors: bool = False
     category_slug: str | None = None
     sub_category_slug: str | None = None
     clear_sub_category: bool = False
@@ -169,6 +175,8 @@ class ApiBookUpdateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_flags(self) -> ApiBookUpdateRequest:
+        if self.clear_authors and self.authors is not None:
+            raise ValueError("cannot provide authors when clear_authors is true")
         if self.clear_sub_category and self.sub_category_slug is not None:
             raise ValueError("cannot provide sub_category_slug when clear_sub_category is true")
         if self.clear_purchase_urls and self.purchase_urls is not None:
@@ -190,6 +198,8 @@ class ApiBookUpdateRequest(BaseModel):
     def to_service_input(self) -> BookUpdateInput:
         return BookUpdateInput(
             name=self.name,
+            authors=self.authors,
+            clear_authors=self.clear_authors,
             category_slug=self.category_slug,
             sub_category_slug=self.sub_category_slug,
             clear_sub_category=self.clear_sub_category,

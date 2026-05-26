@@ -32,6 +32,7 @@ class TaxonomyCategorySchema(CategorySchema):
 
 class BookCreateInput(BaseModel):
     name: str = Field(min_length=1, max_length=255)
+    authors: list[str] = Field(default_factory=list)
     category_slug: str = Field(min_length=1, max_length=100)
     sub_category_slug: str | None = Field(default=None, max_length=100)
     purchase_urls: list[HttpUrl] = Field(default_factory=list)
@@ -51,6 +52,17 @@ class BookCreateInput(BaseModel):
         if not stripped:
             raise ValueError("name cannot be blank")
         return stripped
+
+    @field_validator("authors")
+    @classmethod
+    def normalize_authors(cls, value: list[str]) -> list[str]:
+        normalized: list[str] = []
+        for author in value:
+            stripped = author.strip()
+            if not stripped:
+                raise ValueError("authors cannot contain blank names")
+            normalized.append(stripped)
+        return normalized
 
     @field_validator("sub_category_slug", "edition", "note")
     @classmethod
@@ -82,6 +94,8 @@ class BookCreateInput(BaseModel):
 
 class BookUpdateInput(BaseModel):
     name: str | None = Field(default=None, max_length=255)
+    authors: list[str] | None = None
+    clear_authors: bool = False
     category_slug: str | None = Field(default=None, max_length=100)
     sub_category_slug: str | None = Field(default=None, max_length=100)
     clear_sub_category: bool = False
@@ -122,6 +136,19 @@ class BookUpdateInput(BaseModel):
             raise ValueError("category_slug cannot be blank")
         return stripped
 
+    @field_validator("authors")
+    @classmethod
+    def normalize_optional_authors(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        normalized: list[str] = []
+        for author in value:
+            stripped = author.strip()
+            if not stripped:
+                raise ValueError("authors cannot contain blank names")
+            normalized.append(stripped)
+        return normalized
+
     @field_validator("sub_category_slug", "edition", "note")
     @classmethod
     def normalize_optional_update_text(cls, value: str | None) -> str | None:
@@ -147,6 +174,8 @@ class BookUpdateInput(BaseModel):
 
     @model_validator(mode="after")
     def validate_clear_flags(self) -> BookUpdateInput:
+        if self.clear_authors and self.authors is not None:
+            raise ValueError("cannot provide authors when clear_authors is true")
         if self.clear_sub_category and self.sub_category_slug is not None:
             raise ValueError("cannot provide sub_category_slug when clear_sub_category is true")
         if self.clear_purchase_urls and self.purchase_urls is not None:
@@ -204,6 +233,7 @@ class BookSchema(BaseModel):
 
     id: UUID
     name: str
+    authors: list[str] = Field(default_factory=list)
     category: CategorySchema
     sub_category: SubCategorySchema | None = None
     purchase_urls: list[str]

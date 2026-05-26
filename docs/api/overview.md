@@ -39,6 +39,8 @@ Supported query parameters:
 
 FastAPI routes use API-specific request and response schemas. Internal service DTOs remain separate so adapter-only fields such as local thumbnail paths are not part of the public HTTP contract.
 
+Book create, update, fetch, and list responses expose `authors` as an ordered list of strings.
+
 ## Design Rule
 
 Routes remain thin and delegate business logic to shared services.

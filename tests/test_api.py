@@ -25,6 +25,7 @@ def test_api_health_and_book_flow(session_factory) -> None:
         "/api/v1/books",
         json={
             "name": "Never Let Me Go",
+            "authors": ["Kazuo Ishiguro"],
             "category_slug": "narratives",
             "sub_category_slug": "contemporary-fiction",
             "purchase_urls": ["https://example.com/books/never-let-me-go"],
@@ -36,7 +37,11 @@ def test_api_health_and_book_flow(session_factory) -> None:
     get_response = client.get(f"/api/v1/books/{create_response.json()['id']}")
     update_response = client.patch(
         f"/api/v1/books/{create_response.json()['id']}",
-        json={"reading_status": "read", "clear_note": True},
+        json={
+            "authors": ["Kazuo Ishiguro", "Guest Editor"],
+            "reading_status": "read",
+            "clear_note": True,
+        },
     )
     filtered_response = client.get(
         "/api/v1/books",
@@ -51,16 +56,20 @@ def test_api_health_and_book_flow(session_factory) -> None:
     assert any(item["slug"] == "narratives" for item in categories_response.json())
     assert create_response.status_code == 201
     assert create_response.json()["name"] == "Never Let Me Go"
+    assert create_response.json()["authors"] == ["Kazuo Ishiguro"]
     assert unread_response.status_code == 200
     assert unread_response.json()["items"][0]["name"] == "Never Let Me Go"
     assert unread_response.json()["page"] == 1
     assert get_response.status_code == 200
     assert get_response.json()["id"] == create_response.json()["id"]
+    assert get_response.json()["authors"] == ["Kazuo Ishiguro"]
     assert update_response.status_code == 200
+    assert update_response.json()["authors"] == ["Kazuo Ishiguro", "Guest Editor"]
     assert update_response.json()["reading_status"] == "read"
     assert update_response.json()["note"] is None
     assert filtered_response.status_code == 200
     assert filtered_response.json()["total_items"] == 1
+    assert filtered_response.json()["items"][0]["authors"] == ["Kazuo Ishiguro", "Guest Editor"]
     assert filtered_response.json()["items"][0]["reading_status"] == "read"
     assert delete_response.status_code == 204
     assert missing_response.status_code == 404

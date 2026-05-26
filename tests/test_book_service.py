@@ -17,6 +17,7 @@ def test_create_book_and_filter_by_status(seeded_session, tmp_path) -> None:
     created = service.create_book(
         BookCreateInput(
             name="The Argonauts",
+            authors=["Maggie Nelson"],
             category_slug="essays",
             sub_category_slug="personal-essays",
             purchase_urls=["https://example.com/books/the-argonauts"],
@@ -34,6 +35,7 @@ def test_create_book_and_filter_by_status(seeded_session, tmp_path) -> None:
     unread = service.list_books(status=ReadingStatus.UNREAD)
 
     assert created.name == "The Argonauts"
+    assert created.authors == ["Maggie Nelson"]
     assert created.thumbnail_object_key == "thumbnails/fake-path-object-1"
     assert created.purchase_urls == ["https://example.com/books/the-argonauts"]
     assert storage.uploads == [("path", str(cover_path))]
@@ -121,6 +123,26 @@ def test_update_book_replaces_thumbnail_and_deletes_previous_object(
     assert updated.name == "Updated Cover"
     assert updated.thumbnail_object_key == "thumbnails/fake-path-object-2"
     assert storage.deletions == ["thumbnails/fake-path-object-1"]
+
+
+def test_update_book_replaces_authors(seeded_session) -> None:
+    service = BookService(seeded_session, thumbnail_storage=FakeThumbnailStorage())
+    created = service.create_book(
+        BookCreateInput(
+            name="Collaboration",
+            authors=["Author One"],
+            category_slug="essays",
+        )
+    )
+
+    updated = service.update_book(
+        created.id,
+        BookUpdateInput(
+            authors=["Author One", "Author Two"],
+        ),
+    )
+
+    assert updated.authors == ["Author One", "Author Two"]
 
 
 def test_delete_book_removes_thumbnail_object(seeded_session, tmp_path) -> None:

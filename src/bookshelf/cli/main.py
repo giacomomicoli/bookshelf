@@ -18,6 +18,7 @@ from bookshelf.domain.schemas import (
     BookUpdateInput,
 )
 from bookshelf.services.dependencies import build_book_service, build_taxonomy_service
+from bookshelf.tui.app import run_tui
 
 app = typer.Typer(help="CLI-first bookshelf utility.")
 
@@ -129,6 +130,11 @@ def list(status: StatusFilterOption = None) -> None:
 @app.command()
 def unread() -> None:
     _run_query_command(BookQueryInput(status=ReadingStatus.UNREAD))
+
+
+@app.command()
+def tui() -> None:
+    run_tui(session_factory=SessionLocal)
 
 
 @app.command()
@@ -385,10 +391,14 @@ def _prompt_for_book(
     thumbnail_path_value = thumbnail_path
     thumbnail_url_value = thumbnail_url
     if thumbnail_path_value is None and thumbnail_url_value is None:
-        source_mode = typer.prompt(
-            "Thumbnail source [none/path/url]",
-            default="none",
-        ).strip().lower()
+        source_mode = (
+            typer.prompt(
+                "Thumbnail source [none/path/url]",
+                default="none",
+            )
+            .strip()
+            .lower()
+        )
         if source_mode == "path":
             thumbnail_path_value = typer.prompt("Thumbnail file path")
         elif source_mode == "url":
@@ -406,9 +416,7 @@ def _prompt_for_book(
 
     format_value = format
     if format_value is None:
-        typer.echo(
-            "Formats: " + ", ".join(item.value for item in BookFormat)
-        )
+        typer.echo("Formats: " + ", ".join(item.value for item in BookFormat))
         entered = typer.prompt("Format (optional)", default="", show_default=False)
         format_value = BookFormat(entered) if entered else None
 
@@ -500,10 +508,14 @@ def _prompt_for_book_update(
     replace_purchase_urls = typer.confirm("Replace purchase URLs?", default=False)
     purchase_urls = _collect_purchase_urls() if replace_purchase_urls else None
 
-    thumbnail_action = typer.prompt(
-        "Thumbnail action [keep/clear/path/url]",
-        default="keep",
-    ).strip().lower()
+    thumbnail_action = (
+        typer.prompt(
+            "Thumbnail action [keep/clear/path/url]",
+            default="keep",
+        )
+        .strip()
+        .lower()
+    )
     thumbnail_path = None
     thumbnail_url = None
     clear_thumbnail = False
@@ -530,9 +542,7 @@ def _prompt_for_book_update(
         default="",
         show_default=False,
     ).strip()
-    reading_status_value = (
-        ReadingStatus(reading_status_entered) if reading_status_entered else None
-    )
+    reading_status_value = ReadingStatus(reading_status_entered) if reading_status_entered else None
 
     note_value, clear_note = _prompt_note_update(current_book.note)
 
@@ -698,10 +708,14 @@ def _prompt_optional_enum_update(
 
 
 def _prompt_note_update(current_note: str | None) -> tuple[str | None, bool]:
-    action = typer.prompt(
-        "Note action [keep/edit/clear]",
-        default="keep",
-    ).strip().lower()
+    action = (
+        typer.prompt(
+            "Note action [keep/edit/clear]",
+            default="keep",
+        )
+        .strip()
+        .lower()
+    )
     if action == "keep":
         return None, False
     if action == "clear":

@@ -2,12 +2,13 @@
 
 ## Summary
 
-Bookshelf uses a modular monolith structure with shared application services that are called by both the CLI and the API. This keeps business logic in one place while allowing the current manual workflow to evolve into a future graphical client.
+Bookshelf uses a modular monolith structure with shared application services that are called by the CLI, the TUI, and the API. This keeps business logic in one place while allowing new adapters to be added without rewriting core workflows.
 
 ## Layers
 
 - `api`: FastAPI routes and request/response schemas
 - `cli`: Typer commands and interactive prompts
+- `tui`: Textual full-screen terminal interface
 - `services`: application use-cases
 - `repositories`: persistence logic
 - `domain`: entities, enums, and validation rules
@@ -18,6 +19,7 @@ Bookshelf uses a modular monolith structure with shared application services tha
 ## Boundaries
 
 - CLI commands must call services rather than perform direct persistence work.
+- TUI screens must call services rather than duplicate command logic.
 - API routes must call services rather than duplicate command logic.
 - Core design changes require ADRs.
 
@@ -31,5 +33,10 @@ Bookshelf uses a modular monolith structure with shared application services tha
 - taxonomy seed loading from YAML
 - interactive CLI book creation
 - book query, update, and deletion workflows
+- full-screen TUI for paginated browsing, CRUD flows, note editing, and thumbnail imports
 - thumbnail replacement and cleanup lifecycle
 - paginated REST API with dedicated HTTP schemas
+
+## Recent Delivery
+
+- Sprint 002 delivered the Docker-first Textual TUI adapter, the `/app/imports` workflow for container-visible local thumbnail imports, and the corrected full-screen layout that keeps the library panes visible in normal terminal sizes.

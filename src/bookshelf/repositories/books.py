@@ -140,9 +140,7 @@ class TaxonomyRepository:
 
     def list_categories(self) -> list[Category]:
         statement = (
-            select(Category)
-            .options(joinedload(Category.subcategories))
-            .order_by(Category.name)
+            select(Category).options(joinedload(Category.subcategories)).order_by(Category.name)
         )
         return list(self.session.scalars(statement).unique())
 

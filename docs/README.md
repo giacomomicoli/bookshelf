@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Bookshelf is a CLI-first, API-ready utility for storing and organizing book metadata in a way that mirrors a physical bookshelf. Categories represent shelf compartments, with optional sub-categories for finer grouping.
+Bookshelf is a CLI-first, TUI-enabled, API-ready utility for storing and organizing book metadata in a way that mirrors a physical bookshelf. Categories represent shelf compartments, with optional sub-categories for finer grouping.
 
 ## Read Order
 
@@ -23,8 +23,23 @@ Bookshelf is a CLI-first, API-ready utility for storing and organizing book meta
 - `docs/sprints/active/`: active sprint documents
 - `docs/sprints/archive/`: completed sprint documents
 
+## Environment Notes
+
+- `.env.example` is the committed local host-run template and is meant to be copied to `.env`.
+- `.env.docker` is the committed Docker Compose bootstrap config and is kept in git because it contains only non-secret local development defaults.
+- local host-run commands use `localhost` service addresses, while Compose containers use service names such as `postgres` and `minio`.
+
 ## Workflow
 
 The bootstrap implementation establishes the first working system. Every follow-up feature or change should be driven by an active sprint document and moved to archive once complete.
 
 Any open question or decision that impacts the core design must be captured as an ADR in `docs/decisions/` before implementation continues.
+
+Current active follow-up work:
+
+- none currently
+
+Recent follow-up references:
+
+- `docs/sprints/archive/2026-05-26-sprint-002-docker-first-tui.md`
+- `docs/decisions/ADR-019-docker-first-tui-adapter-and-mounted-imports.md`

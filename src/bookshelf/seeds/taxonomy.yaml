@@ -1,0 +1,155 @@
+categories:
+  - slug: essays
+    name: Essays
+    subcategories:
+      - slug: personal-essays
+        name: Personal Essays
+      - slug: literary-criticism
+        name: Literary Criticism
+      - slug: philosophy
+        name: Philosophy
+      - slug: politics
+        name: Politics
+      - slug: cultural-studies
+        name: Cultural Studies
+  - slug: narratives
+    name: Narratives
+    subcategories:
+      - slug: classic-fiction
+        name: Classic Fiction
+      - slug: contemporary-fiction
+        name: Contemporary Fiction
+      - slug: historical-fiction
+        name: Historical Fiction
+      - slug: short-stories
+        name: Short Stories
+  - slug: drama
+    name: Drama
+    subcategories:
+      - slug: tragedy
+        name: Tragedy
+      - slug: comedy
+        name: Comedy
+      - slug: modern-drama
+        name: Modern Drama
+  - slug: horror
+    name: Horror
+    subcategories:
+      - slug: gothic
+        name: Gothic
+      - slug: supernatural
+        name: Supernatural
+      - slug: psychological
+        name: Psychological
+      - slug: cosmic
+        name: Cosmic
+  - slug: fantasy
+    name: Fantasy
+    subcategories:
+      - slug: epic-fantasy
+        name: Epic Fantasy
+      - slug: urban-fantasy
+        name: Urban Fantasy
+      - slug: dark-fantasy
+        name: Dark Fantasy
+      - slug: mythic
+        name: Mythic
+  - slug: science-fiction
+    name: Science Fiction
+    subcategories:
+      - slug: dystopian
+        name: Dystopian
+      - slug: space-opera
+        name: Space Opera
+      - slug: cyberpunk
+        name: Cyberpunk
+      - slug: speculative
+        name: Speculative
+  - slug: poetry
+    name: Poetry
+    subcategories:
+      - slug: lyric
+        name: Lyric
+      - slug: epic
+        name: Epic
+      - slug: contemporary-poetry
+        name: Contemporary Poetry
+      - slug: collected-poems
+        name: Collected Poems
+  - slug: biography-memoir
+    name: Biography & Memoir
+    subcategories:
+      - slug: biography
+        name: Biography
+      - slug: memoir
+        name: Memoir
+      - slug: autobiography
+        name: Autobiography
+      - slug: letters-diaries
+        name: Letters & Diaries
+  - slug: history
+    name: History
+    subcategories:
+      - slug: ancient-history
+        name: Ancient History
+      - slug: modern-history
+        name: Modern History
+      - slug: military-history
+        name: Military History
+      - slug: social-history
+        name: Social History
+  - slug: philosophy
+    name: Philosophy
+    subcategories:
+      - slug: ethics
+        name: Ethics
+      - slug: metaphysics
+        name: Metaphysics
+      - slug: epistemology
+        name: Epistemology
+      - slug: political-philosophy
+        name: Political Philosophy
+  - slug: science
+    name: Science
+    subcategories:
+      - slug: physics
+        name: Physics
+      - slug: biology
+        name: Biology
+      - slug: mathematics
+        name: Mathematics
+      - slug: popular-science
+        name: Popular Science
+  - slug: politics-society
+    name: Politics & Society
+    subcategories:
+      - slug: sociology
+        name: Sociology
+      - slug: economics
+        name: Economics
+      - slug: anthropology
+        name: Anthropology
+      - slug: political-theory
+        name: Political Theory
+  - slug: art-design
+    name: Art & Design
+    subcategories:
+      - slug: art-history
+        name: Art History
+      - slug: criticism
+        name: Criticism
+      - slug: architecture
+        name: Architecture
+      - slug: photography
+        name: Photography
+  - slug: reference
+    name: Reference
+    subcategories:
+      - slug: dictionaries
+        name: Dictionaries
+      - slug: encyclopedias
+        name: Encyclopedias
+      - slug: manuals
+        name: Manuals
+      - slug: bibliographies
+        name: Bibliographies
